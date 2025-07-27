@@ -51,6 +51,10 @@ const MyBots: React.FC<MyBotsProps> = ({
   const [sellAtBuyPriceEnabled, setSellAtBuyPriceEnabled] = useState(false);
   const [consecutiveFallsEnabled, setConsecutiveFallsEnabled] = useState(false);
   const [consecutiveFallsCount, setConsecutiveFallsCount] = useState('3');
+  // Enhanced Dollar Drop Protection with timing delays
+  const [enhancedDropProtectionEnabled, setEnhancedDropProtectionEnabled] = useState(false);
+  const [firstDelaySeconds, setFirstDelaySeconds] = useState('15');
+  const [secondDelaySeconds, setSecondDelaySeconds] = useState('30');
   const [expandedBots, setExpandedBots] = useState<Set<string>>(new Set());
   const [botStatuses, setBotStatuses] = useState<BotStatus[]>([]);
 
@@ -261,7 +265,11 @@ const MyBots: React.FC<MyBotsProps> = ({
         dollarDropTriggerAmount: dollarDropEnabled && profitTakingEnabled ? parseFloat(dollarDropTriggerAmount) || 0.10 : undefined,
         sellAtBuyPriceEnabled: dollarDropEnabled ? sellAtBuyPriceEnabled : false,
         consecutiveFallsEnabled: dollarDropEnabled ? consecutiveFallsEnabled : false,
-        consecutiveFallsCount: dollarDropEnabled && consecutiveFallsEnabled ? parseInt(consecutiveFallsCount) || 3 : undefined
+        consecutiveFallsCount: dollarDropEnabled && consecutiveFallsEnabled ? parseInt(consecutiveFallsCount) || 3 : undefined,
+        // Enhanced Dollar Drop Protection with timing delays
+        enhancedDropProtectionEnabled: dollarDropEnabled ? enhancedDropProtectionEnabled : false,
+        firstDelaySeconds: dollarDropEnabled && enhancedDropProtectionEnabled ? parseInt(firstDelaySeconds) || 15 : undefined,
+        secondDelaySeconds: dollarDropEnabled && enhancedDropProtectionEnabled ? parseInt(secondDelaySeconds) || 30 : undefined
       }
     };
 
@@ -283,6 +291,10 @@ const MyBots: React.FC<MyBotsProps> = ({
     setSellAtBuyPriceEnabled(false);
     setConsecutiveFallsEnabled(false);
     setConsecutiveFallsCount('3');
+    // Reset Enhanced Dollar Drop Protection settings
+    setEnhancedDropProtectionEnabled(false);
+    setFirstDelaySeconds('15');
+    setSecondDelaySeconds('30');
     setShowCreateModal(false);
   };
 
@@ -1181,6 +1193,70 @@ const MyBots: React.FC<MyBotsProps> = ({
                     </View>
                   </View>
                 )}
+                
+                <View style={styles.inputGroup}>
+                  <View style={styles.switchContainer}>
+                    <View style={styles.switchLabelContainer}>
+                      <Shield size={16} color={Colors.light.primary} />
+                      <Text style={styles.switchLabel}>Enhanced Drop Protection</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.switch, enhancedDropProtectionEnabled && styles.switchActive]}
+                      onPress={() => setEnhancedDropProtectionEnabled(!enhancedDropProtectionEnabled)}
+                    >
+                      <View style={[styles.switchThumb, enhancedDropProtectionEnabled && styles.switchThumbActive]} />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.inputDescription}>
+                    Wait for specified delays after last interval, then check live price twice before selling
+                  </Text>
+                </View>
+                
+                {enhancedDropProtectionEnabled && (
+                  <>
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.switchLabel}>First delay (seconds)</Text>
+                      <View style={styles.inputContainer}>
+                        <TextInput
+                          style={styles.input}
+                          value={firstDelaySeconds}
+                          onChangeText={setFirstDelaySeconds}
+                          keyboardType="numeric"
+                          placeholder="15"
+                        />
+                        <Text style={styles.unit}>s</Text>
+                      </View>
+                    </View>
+                    
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.switchLabel}>Second delay (seconds)</Text>
+                      <View style={styles.inputContainer}>
+                        <TextInput
+                          style={styles.input}
+                          value={secondDelaySeconds}
+                          onChangeText={setSecondDelaySeconds}
+                          keyboardType="numeric"
+                          placeholder="30"
+                        />
+                      </View>
+                    </View>
+                    
+                    <View style={styles.enhancedProtectionDescription}>
+                      <Text style={styles.enhancedProtectionText}>
+                        📊 Enhanced Protection Logic:
+                      </Text>
+                      <Text style={styles.enhancedProtectionBullet}>
+                        • After last interval, wait {firstDelaySeconds || '15'}s and check live price
+                      </Text>
+                      <Text style={styles.enhancedProtectionBullet}>
+                        • Wait another {secondDelaySeconds || '30'}s and check again
+                      </Text>
+                      <Text style={styles.enhancedProtectionBullet}>
+                        • If both live prices are lower than last interval price, trigger sell
+                      </Text>
+                    </View>
+                  </>
+                )}
               </>
             )}
           </ScrollView>
@@ -1774,6 +1850,27 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     opacity: 0.9,
   },
+  enhancedProtectionDescription: {
+    backgroundColor: Colors.light.background,
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.light.primary,
+  },
+  enhancedProtectionText: {
+    fontSize: 14,
+    color: Colors.light.text,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  enhancedProtectionBullet: {
+    fontSize: 13,
+    color: Colors.light.subtext,
+    marginLeft: 8,
+    marginBottom: 4,
+    lineHeight: 18,
+  }
 });
 
 export default MyBots;
