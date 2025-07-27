@@ -20,6 +20,10 @@ export interface TradingBot {
     sellAtBuyPriceEnabled?: boolean; // Sell if price falls back to or below buy price
     consecutiveFallsEnabled?: boolean; // Sell after consecutive price falls
     consecutiveFallsCount?: number; // Number of consecutive falls to trigger sell (default 3)
+    // Enhanced Dollar Drop Protection with timing delays
+    enhancedDropProtectionEnabled?: boolean; // Enable enhanced drop protection with timing delays
+    firstDelaySeconds?: number; // First delay in seconds (default 15)
+    secondDelaySeconds?: number; // Second delay in seconds (default 30)
   };
   lastProcessedIndex?: number; // Used for direction_change_buy method to track processed direction changes
   stats: {

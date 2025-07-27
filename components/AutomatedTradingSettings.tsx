@@ -17,6 +17,10 @@ interface AutomatedTradingSettingsProps {
     sellAtBuyPriceEnabled?: boolean;
     consecutiveFallsEnabled?: boolean;
     consecutiveFallsCount?: number;
+    // Enhanced Dollar Drop Protection with timing delays
+    enhancedDropProtectionEnabled?: boolean;
+    firstDelaySeconds?: number;
+    secondDelaySeconds?: number;
   };
   onUpdate: (settings: Partial<TradingSettings & {
     tradingMethod?: 'trend_reversal' | 'direction_change_reference' | 'direction_change_buy' | 'price_comparison' | 'slope_analysis';
@@ -30,6 +34,10 @@ interface AutomatedTradingSettingsProps {
     sellAtBuyPriceEnabled?: boolean;
     consecutiveFallsEnabled?: boolean;
     consecutiveFallsCount?: number;
+    // Enhanced Dollar Drop Protection with timing delays
+    enhancedDropProtectionEnabled?: boolean;
+    firstDelaySeconds?: number;
+    secondDelaySeconds?: number;
   }>) => void;
 }
 
@@ -44,6 +52,8 @@ const AutomatedTradingSettings: React.FC<AutomatedTradingSettingsProps> = ({
   const [profitTakingDollarAmount, setProfitTakingDollarAmount] = useState((settings.profitTakingDollarAmount || 0).toString());
   const [dollarDropTriggerAmount, setDollarDropTriggerAmount] = useState((settings.dollarDropTriggerAmount || 0.10).toString());
   const [consecutiveFallsCount, setConsecutiveFallsCount] = useState((settings.consecutiveFallsCount || 3).toString());
+  const [firstDelaySeconds, setFirstDelaySeconds] = useState((settings.firstDelaySeconds || 15).toString());
+  const [secondDelaySeconds, setSecondDelaySeconds] = useState((settings.secondDelaySeconds || 30).toString());
   
   const handleToggle = (value: boolean) => {
     onUpdate({ enabled: value });
@@ -68,6 +78,11 @@ const AutomatedTradingSettings: React.FC<AutomatedTradingSettingsProps> = ({
       updates.profitTakingDollarAmount = parseFloat(profitTakingDollarAmount) || 0;
       updates.dollarDropTriggerAmount = parseFloat(dollarDropTriggerAmount) || 0.10;
       updates.consecutiveFallsCount = parseInt(consecutiveFallsCount) || 3;
+    }
+    
+    if (settings.enhancedDropProtectionEnabled) {
+      updates.firstDelaySeconds = parseInt(firstDelaySeconds) || 15;
+      updates.secondDelaySeconds = parseInt(secondDelaySeconds) || 30;
     }
     
     onUpdate(updates);
@@ -129,6 +144,9 @@ const AutomatedTradingSettings: React.FC<AutomatedTradingSettingsProps> = ({
         )}
         {settings.dollarDropEnabled && (
           <Text style={styles.descriptionBullet}>• Enhanced Dollar Drop protection enabled</Text>
+        )}
+        {settings.enhancedDropProtectionEnabled && (
+          <Text style={styles.descriptionBullet}>• Enhanced Drop Protection with timing delays enabled</Text>
         )}
       </View>
       
@@ -393,6 +411,63 @@ const AutomatedTradingSettings: React.FC<AutomatedTradingSettingsProps> = ({
                   </View>
                 </View>
               )}
+              
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>Enhanced Drop Protection</Text>
+                <Switch
+                  value={settings.enhancedDropProtectionEnabled || false}
+                  onValueChange={(value) => onUpdate({ enhancedDropProtectionEnabled: value })}
+                  trackColor={{ false: '#E5E9F0', true: Colors.light.primary }}
+                  thumbColor="#FFFFFF"
+                />
+              </View>
+              
+              {settings.enhancedDropProtectionEnabled && (
+                <>
+                  <View style={styles.inputRow}>
+                    <Text style={styles.label}>First delay (seconds)</Text>
+                    <View style={styles.inputContainer}>
+                      <TextInput
+                        style={styles.input}
+                        value={firstDelaySeconds}
+                        onChangeText={setFirstDelaySeconds}
+                        keyboardType="numeric"
+                        placeholder="15"
+                      />
+                      <Text style={styles.unit}>s</Text>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.inputRow}>
+                    <Text style={styles.label}>Second delay (seconds)</Text>
+                    <View style={styles.inputContainer}>
+                      <TextInput
+                        style={styles.input}
+                        value={secondDelaySeconds}
+                        onChangeText={setSecondDelaySeconds}
+                        keyboardType="numeric"
+                        placeholder="30"
+                      />
+                      <Text style={styles.unit}>s</Text>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.enhancedProtectionDescription}>
+                    <Text style={styles.enhancedProtectionText}>
+                      📊 Enhanced Protection Logic:
+                    </Text>
+                    <Text style={styles.enhancedProtectionBullet}>
+                      • After last interval, wait {firstDelaySeconds || '15'}s and check live price
+                    </Text>
+                    <Text style={styles.enhancedProtectionBullet}>
+                      • Wait another {secondDelaySeconds || '30'}s and check again
+                    </Text>
+                    <Text style={styles.enhancedProtectionBullet}>
+                      • If both live prices are lower than last interval price, trigger sell
+                    </Text>
+                  </View>
+                </>
+              )}
             </>
           )}
           
@@ -596,6 +671,27 @@ const styles = StyleSheet.create({
     color: Colors.light.subtext,
     flex: 1,
     marginRight: 8,
+  },
+  enhancedProtectionDescription: {
+    backgroundColor: Colors.light.background,
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.light.primary,
+  },
+  enhancedProtectionText: {
+    fontSize: 14,
+    color: Colors.light.text,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  enhancedProtectionBullet: {
+    fontSize: 13,
+    color: Colors.light.subtext,
+    marginLeft: 8,
+    marginBottom: 4,
+    lineHeight: 18,
   }
 });
 
