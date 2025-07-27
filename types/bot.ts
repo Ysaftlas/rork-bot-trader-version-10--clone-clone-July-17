@@ -9,7 +9,7 @@ export interface TradingBot {
     maxInvestmentPerTrade: number;
     investmentType: 'dollars' | 'shares';
     chartPeriod: '1sec' | '5min' | '1D' | '1DSec' | '5MinSec';
-    tradingMethod: 'trend_reversal' | 'direction_change_reference' | 'direction_change_buy' | 'price_comparison' | 'slope_analysis';
+    tradingMethod: 'trend_reversal' | 'direction_change_reference' | 'direction_change_buy' | 'price_comparison' | 'slope_analysis' | 'confirmed_recovery';
     dollarDropThreshold?: number; // Only used for direction_change_reference method
     // Enhanced Dollar Drop settings
     dollarDropEnabled?: boolean; // Apply Dollar Drop logic across all trading methods
@@ -24,6 +24,9 @@ export interface TradingBot {
     enhancedDropProtectionEnabled?: boolean; // Enable enhanced drop protection with timing delays
     firstDelaySeconds?: number; // First delay in seconds (default 15)
     secondDelaySeconds?: number; // Second delay in seconds (default 30)
+    // Confirmed Recovery settings
+    confirmedRecoveryFirstDelay?: number; // First delay for confirmed recovery (default 15)
+    confirmedRecoverySecondDelay?: number; // Second delay for confirmed recovery (default 30)
   };
   lastProcessedIndex?: number; // Used for direction_change_buy method to track processed direction changes
   stats: {

@@ -6,7 +6,7 @@ import { TradingSettings } from '@/types/stock';
 
 interface AutomatedTradingSettingsProps {
   settings: TradingSettings & {
-    tradingMethod?: 'trend_reversal' | 'direction_change_reference' | 'direction_change_buy' | 'price_comparison' | 'slope_analysis';
+    tradingMethod?: 'trend_reversal' | 'direction_change_reference' | 'direction_change_buy' | 'price_comparison' | 'slope_analysis' | 'confirmed_recovery';
     dollarDropThreshold?: number;
     // Enhanced Dollar Drop settings
     dollarDropEnabled?: boolean;
@@ -21,9 +21,12 @@ interface AutomatedTradingSettingsProps {
     enhancedDropProtectionEnabled?: boolean;
     firstDelaySeconds?: number;
     secondDelaySeconds?: number;
+    // Confirmed Recovery settings
+    confirmedRecoveryFirstDelay?: number;
+    confirmedRecoverySecondDelay?: number;
   };
   onUpdate: (settings: Partial<TradingSettings & {
-    tradingMethod?: 'trend_reversal' | 'direction_change_reference' | 'direction_change_buy' | 'price_comparison' | 'slope_analysis';
+    tradingMethod?: 'trend_reversal' | 'direction_change_reference' | 'direction_change_buy' | 'price_comparison' | 'slope_analysis' | 'confirmed_recovery';
     dollarDropThreshold?: number;
     // Enhanced Dollar Drop settings
     dollarDropEnabled?: boolean;
@@ -38,6 +41,9 @@ interface AutomatedTradingSettingsProps {
     enhancedDropProtectionEnabled?: boolean;
     firstDelaySeconds?: number;
     secondDelaySeconds?: number;
+    // Confirmed Recovery settings
+    confirmedRecoveryFirstDelay?: number;
+    confirmedRecoverySecondDelay?: number;
   }>) => void;
 }
 
@@ -54,6 +60,8 @@ const AutomatedTradingSettings: React.FC<AutomatedTradingSettingsProps> = ({
   const [consecutiveFallsCount, setConsecutiveFallsCount] = useState((settings.consecutiveFallsCount || 3).toString());
   const [firstDelaySeconds, setFirstDelaySeconds] = useState((settings.firstDelaySeconds || 15).toString());
   const [secondDelaySeconds, setSecondDelaySeconds] = useState((settings.secondDelaySeconds || 30).toString());
+  const [confirmedRecoveryFirstDelay, setConfirmedRecoveryFirstDelay] = useState((settings.confirmedRecoveryFirstDelay || 15).toString());
+  const [confirmedRecoverySecondDelay, setConfirmedRecoverySecondDelay] = useState((settings.confirmedRecoverySecondDelay || 30).toString());
   
   const handleToggle = (value: boolean) => {
     onUpdate({ enabled: value });
@@ -85,11 +93,16 @@ const AutomatedTradingSettings: React.FC<AutomatedTradingSettingsProps> = ({
       updates.secondDelaySeconds = parseInt(secondDelaySeconds) || 30;
     }
     
+    if (settings.tradingMethod === 'confirmed_recovery') {
+      updates.confirmedRecoveryFirstDelay = parseInt(confirmedRecoveryFirstDelay) || 15;
+      updates.confirmedRecoverySecondDelay = parseInt(confirmedRecoverySecondDelay) || 30;
+    }
+    
     onUpdate(updates);
     setExpanded(false);
   };
   
-  const handleTradingMethodChange = (method: 'trend_reversal' | 'direction_change_reference' | 'direction_change_buy' | 'price_comparison' | 'slope_analysis') => {
+  const handleTradingMethodChange = (method: 'trend_reversal' | 'direction_change_reference' | 'direction_change_buy' | 'price_comparison' | 'slope_analysis' | 'confirmed_recovery') => {
     onUpdate({ tradingMethod: method });
   };
   
@@ -136,6 +149,12 @@ const AutomatedTradingSettings: React.FC<AutomatedTradingSettingsProps> = ({
             <Text style={styles.descriptionBullet}>• BUY when slope between last 2 intervals is positive (rising)</Text>
             <Text style={styles.descriptionBullet}>• SELL when slope between last 2 intervals is negative (falling)</Text>
           </>
+        ) : settings.tradingMethod === 'confirmed_recovery' ? (
+          <>
+            <Text style={styles.descriptionBullet}>• BUY after confirming upward recovery from downtrend</Text>
+            <Text style={styles.descriptionBullet}>• Wait 15s + 30s to confirm two positive beats after downtrend</Text>
+            <Text style={styles.descriptionBullet}>• SELL when trend changes from UP to DOWN</Text>
+          </>
         ) : (
           <>
             <Text style={styles.descriptionBullet}>• BUY when trend changes from DOWN to UP</Text>
@@ -156,16 +175,16 @@ const AutomatedTradingSettings: React.FC<AutomatedTradingSettingsProps> = ({
           
           <View style={styles.toggleContainer}>
             <Text style={styles.toggleLabel}>Strategy</Text>
-            <View style={styles.fiveToggleButtons}>
+            <View style={styles.sixToggleButtons}>
               <TouchableOpacity
                 style={[
-                  styles.fiveToggleButton,
+                  styles.sixToggleButton,
                   (settings.tradingMethod || 'trend_reversal') === 'trend_reversal' && styles.activeToggleButton
                 ]}
                 onPress={() => handleTradingMethodChange('trend_reversal')}
               >
                 <Text style={[
-                  styles.fiveToggleButtonText,
+                  styles.sixToggleButtonText,
                   (settings.tradingMethod || 'trend_reversal') === 'trend_reversal' && styles.activeToggleButtonText
                 ]}>
                   Trend
@@ -174,13 +193,13 @@ const AutomatedTradingSettings: React.FC<AutomatedTradingSettingsProps> = ({
               
               <TouchableOpacity
                 style={[
-                  styles.fiveToggleButton,
+                  styles.sixToggleButton,
                   settings.tradingMethod === 'direction_change_reference' && styles.activeToggleButton
                 ]}
                 onPress={() => handleTradingMethodChange('direction_change_reference')}
               >
                 <Text style={[
-                  styles.fiveToggleButtonText,
+                  styles.sixToggleButtonText,
                   settings.tradingMethod === 'direction_change_reference' && styles.activeToggleButtonText
                 ]}>
                   Dir Ref
@@ -189,13 +208,13 @@ const AutomatedTradingSettings: React.FC<AutomatedTradingSettingsProps> = ({
               
               <TouchableOpacity
                 style={[
-                  styles.fiveToggleButton,
+                  styles.sixToggleButton,
                   settings.tradingMethod === 'direction_change_buy' && styles.activeToggleButton
                 ]}
                 onPress={() => handleTradingMethodChange('direction_change_buy')}
               >
                 <Text style={[
-                  styles.fiveToggleButtonText,
+                  styles.sixToggleButtonText,
                   settings.tradingMethod === 'direction_change_buy' && styles.activeToggleButtonText
                 ]}>
                   Dir Buy
@@ -204,13 +223,13 @@ const AutomatedTradingSettings: React.FC<AutomatedTradingSettingsProps> = ({
               
               <TouchableOpacity
                 style={[
-                  styles.fiveToggleButton,
+                  styles.sixToggleButton,
                   settings.tradingMethod === 'price_comparison' && styles.activeToggleButton
                 ]}
                 onPress={() => handleTradingMethodChange('price_comparison')}
               >
                 <Text style={[
-                  styles.fiveToggleButtonText,
+                  styles.sixToggleButtonText,
                   settings.tradingMethod === 'price_comparison' && styles.activeToggleButtonText
                 ]}>
                   Price
@@ -219,16 +238,31 @@ const AutomatedTradingSettings: React.FC<AutomatedTradingSettingsProps> = ({
               
               <TouchableOpacity
                 style={[
-                  styles.fiveToggleButton,
+                  styles.sixToggleButton,
                   settings.tradingMethod === 'slope_analysis' && styles.activeToggleButton
                 ]}
                 onPress={() => handleTradingMethodChange('slope_analysis')}
               >
                 <Text style={[
-                  styles.fiveToggleButtonText,
+                  styles.sixToggleButtonText,
                   settings.tradingMethod === 'slope_analysis' && styles.activeToggleButtonText
                 ]}>
                   Slope
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[
+                  styles.sixToggleButton,
+                  settings.tradingMethod === 'confirmed_recovery' && styles.activeToggleButton
+                ]}
+                onPress={() => handleTradingMethodChange('confirmed_recovery')}
+              >
+                <Text style={[
+                  styles.sixToggleButtonText,
+                  settings.tradingMethod === 'confirmed_recovery' && styles.activeToggleButtonText
+                ]}>
+                  Recovery
                 </Text>
               </TouchableOpacity>
             </View>
@@ -304,6 +338,57 @@ const AutomatedTradingSettings: React.FC<AutomatedTradingSettingsProps> = ({
                 />
               </View>
             </View>
+          )}
+          
+          {settings.tradingMethod === 'confirmed_recovery' && (
+            <>
+              <Text style={styles.sectionLabel}>Confirmed Recovery Settings</Text>
+              
+              <View style={styles.inputRow}>
+                <Text style={styles.label}>First delay (seconds)</Text>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.input}
+                    value={confirmedRecoveryFirstDelay}
+                    onChangeText={setConfirmedRecoveryFirstDelay}
+                    keyboardType="numeric"
+                    placeholder="15"
+                  />
+                  <Text style={styles.unit}>s</Text>
+                </View>
+              </View>
+              
+              <View style={styles.inputRow}>
+                <Text style={styles.label}>Second delay (seconds)</Text>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.input}
+                    value={confirmedRecoverySecondDelay}
+                    onChangeText={setConfirmedRecoverySecondDelay}
+                    keyboardType="numeric"
+                    placeholder="30"
+                  />
+                </View>
+              </View>
+              
+              <View style={styles.enhancedProtectionDescription}>
+                <Text style={styles.enhancedProtectionText}>
+                  🔄 Confirmed Recovery Logic:
+                </Text>
+                <Text style={styles.enhancedProtectionBullet}>
+                  • Wait for last interval to be in downward direction
+                </Text>
+                <Text style={styles.enhancedProtectionBullet}>
+                  • Wait {confirmedRecoveryFirstDelay || '15'}s and check if price is still going down
+                </Text>
+                <Text style={styles.enhancedProtectionBullet}>
+                  • Wait another {confirmedRecoverySecondDelay || '30'}s and check if price is now going up
+                </Text>
+                <Text style={styles.enhancedProtectionBullet}>
+                  • If both follow-up checks show upward movement, trigger BUY
+                </Text>
+              </View>
+            </>
           )}
           
           <Text style={styles.sectionLabel}>Enhanced Dollar Drop Settings</Text>
@@ -601,6 +686,24 @@ const styles = StyleSheet.create({
   },
   fiveToggleButtonText: {
     fontSize: 9,
+    color: Colors.light.subtext,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  sixToggleButtons: {
+    flexDirection: 'row',
+    backgroundColor: Colors.light.border,
+    borderRadius: 8,
+    padding: 2,
+  },
+  sixToggleButton: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  sixToggleButtonText: {
+    fontSize: 8,
     color: Colors.light.subtext,
     fontWeight: '500',
     textAlign: 'center',
