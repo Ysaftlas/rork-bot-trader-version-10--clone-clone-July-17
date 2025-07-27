@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "Bot trader version 10# Clone Clone",
+    "slug": "bot-trader-version-5-9r27kj1t-01ki0wd8-iy756nkd-88taiv00-p5f9mmvr",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.rork.bot-trader-version-5-9r27kj1t-01ki0wd8-iy756nkd-88taiv00-p5f9mmvr"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "app.rork.bot-trader-version-5-9r27kj1t-01ki0wd8-iy756nkd-88taiv00-p5f9mmvr"
+    },
+    "web": {
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://rork.com/"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
