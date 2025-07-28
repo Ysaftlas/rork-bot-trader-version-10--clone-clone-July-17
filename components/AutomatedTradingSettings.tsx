@@ -114,7 +114,7 @@ const AutomatedTradingSettings: React.FC<AutomatedTradingSettingsProps> = ({
       >
         <View style={styles.titleContainer}>
           <Settings size={20} color={Colors.light.primary} />
-          <Text style={styles.title}>Automated Trading</Text>
+          <Text style={styles.title}>Bot Trading</Text>
         </View>
         
         <Switch
@@ -127,7 +127,7 @@ const AutomatedTradingSettings: React.FC<AutomatedTradingSettingsProps> = ({
       
       <View style={styles.description}>
         <Text style={styles.descriptionText}>
-          🤖 Automated trading strategy:
+          🤖 Bot trading strategy:
         </Text>
         {settings.tradingMethod === 'direction_change_reference' ? (
           <>
