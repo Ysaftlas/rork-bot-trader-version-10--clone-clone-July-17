@@ -273,6 +273,80 @@ export function shouldSellSlopeAnalysis(data: StockData[]): boolean {
   return currentPrice < previousPrice;
 }
 
+// Check if the last interval is in a downward direction
+export function isLastIntervalDownward(data: StockData[]): boolean {
+  if (data.length < 2) return false;
+  
+  const currentPrice = data[data.length - 1].price;
+  const previousPrice = data[data.length - 2].price;
+  
+  return currentPrice < previousPrice;
+}
+
+// Simulate checking price after delay (in real implementation, this would be async)
+export function simulatePriceCheckAfterDelay(
+  data: StockData[],
+  delaySeconds: number,
+  currentPrice: number
+): { price: number; isUpward: boolean } {
+  // In a real implementation, this would wait for the specified delay
+  // and then fetch the live price. For simulation, we'll use a slight variation
+  // of the current price to simulate market movement
+  
+  // Simulate some price movement (±0.5% random change)
+  const randomChange = (Math.random() - 0.5) * 0.01; // -0.5% to +0.5%
+  const simulatedPrice = currentPrice * (1 + randomChange);
+  
+  // Check if this simulated price shows upward movement compared to current
+  const isUpward = simulatedPrice > currentPrice;
+  
+  return { price: simulatedPrice, isUpward };
+}
+
+// Check if bot should buy using confirmed recovery method
+export function shouldBuyConfirmedRecovery(
+  data: StockData[],
+  currentPrice: number,
+  firstDelaySeconds: number = 15,
+  secondDelaySeconds: number = 30
+): { shouldBuy: boolean; reason: string } {
+  // Step 1: Check if the last interval is in a downward direction
+  if (!isLastIntervalDownward(data)) {
+    return {
+      shouldBuy: false,
+      reason: 'Last interval is not in downward direction'
+    };
+  }
+  
+  // Step 2: Simulate waiting first delay and check if price is still going down
+  const firstCheck = simulatePriceCheckAfterDelay(data, firstDelaySeconds, currentPrice);
+  
+  // For confirmed recovery, we want the first check to show the price is still going down
+  // (confirming the downtrend), then the second check to show upward movement
+  if (firstCheck.isUpward) {
+    return {
+      shouldBuy: false,
+      reason: `After ${firstDelaySeconds}s delay, price went up instead of continuing down`
+    };
+  }
+  
+  // Step 3: Simulate waiting second delay and check if price is now going up
+  const secondCheck = simulatePriceCheckAfterDelay(data, secondDelaySeconds, firstCheck.price);
+  
+  if (!secondCheck.isUpward) {
+    return {
+      shouldBuy: false,
+      reason: `After ${secondDelaySeconds}s delay, price is still not showing upward movement`
+    };
+  }
+  
+  // Both conditions met: downtrend confirmed, then upward recovery confirmed
+  return {
+    shouldBuy: true,
+    reason: `Confirmed recovery: downtrend confirmed after ${firstDelaySeconds}s, upward movement confirmed after ${secondDelaySeconds}s`
+  };
+}
+
 // Main trading decision function
 export function makeTradingDecision(
   bot: TradingBot,
@@ -443,6 +517,33 @@ export function makeTradingDecision(
       return {
         action: 'HOLD',
         reason: 'Waiting for new direction change from DOWN to UP'
+      };
+    } else {
+      // Have position, use trend reversal logic for selling
+      const shouldSell = shouldSellTrendReversal(data);
+      
+      return {
+        action: shouldSell ? 'SELL' : 'HOLD',
+        reason: shouldSell ? 'Trend changed from UP to DOWN' : 'Holding position, trend still up'
+      };
+    }
+  } else if (tradingMethod === 'confirmed_recovery') {
+    // Confirmed recovery method
+    if (!bot.currentPosition) {
+      // No position, check if we should buy using confirmed recovery logic
+      const firstDelay = bot.settings.confirmedRecoveryFirstDelay || 15;
+      const secondDelay = bot.settings.confirmedRecoverySecondDelay || 30;
+      
+      const { shouldBuy, reason } = shouldBuyConfirmedRecovery(
+        data,
+        currentPrice,
+        firstDelay,
+        secondDelay
+      );
+      
+      return {
+        action: shouldBuy ? 'BUY' : 'HOLD',
+        reason
       };
     } else {
       // Have position, use trend reversal logic for selling
