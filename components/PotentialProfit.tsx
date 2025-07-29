@@ -1,6 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
-import { TrendingUp, Clock, DollarSign, ArrowUpDown, Calendar, Scissors, TrendingDown } from 'lucide-react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Platform, Alert } from 'react-native';
+import { TrendingUp, Clock, DollarSign, ArrowUpDown, Calendar, Scissors, TrendingDown, Download } from 'lucide-react-native';
+import * as XLSX from 'xlsx';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import Colors from '@/constants/colors';
 import { PotentialProfitSequence, formatPotentialProfitSequence, PotentialLossSequence, formatPotentialLossSequence } from '@/utils/beatsPerMinute';
 
@@ -80,6 +83,114 @@ const PotentialProfit: React.FC<PotentialProfitProps> = ({
       setCurrentFilter('none'); // Toggle off if already active
     } else {
       setCurrentFilter(filterType);
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      // Prepare data for export
+      const profitData = sequences.map((sequence, index) => {
+        const formatted = formatPotentialProfitSequence(sequence);
+        return {
+          'Sequence #': index + 1,
+          'Time Range': formatted.timeRange,
+          'Price Range': formatted.priceRange,
+          'Dollar Gain': sequence.dollarGain,
+          'Percentage Change': `${sequence.percentageChange.toFixed(2)}%`,
+          'Duration (minutes)': Math.round((sequence.endTime - sequence.startTime) / 60000),
+          'Intervals': sequence.dataPoints.length - 1,
+          'Excluded Beats': sequence.excludedBeats,
+          'Avg Per Interval': sequence.dollarGain / (sequence.dataPoints.length - 1),
+          'Start Time': new Date(sequence.startTime).toLocaleString(),
+          'End Time': new Date(sequence.endTime).toLocaleString()
+        };
+      });
+
+      const lossData = lossSequences.map((sequence, index) => {
+        const formatted = formatPotentialLossSequence(sequence);
+        return {
+          'Sequence #': index + 1,
+          'Time Range': formatted.timeRange,
+          'Price Range': formatted.priceRange,
+          'Dollar Loss': sequence.dollarLoss,
+          'Percentage Change': `${sequence.percentageChange.toFixed(2)}%`,
+          'Duration (minutes)': Math.round((sequence.afterReversalTime - sequence.beforeReversalTime) / 60000),
+          'Pattern': 'Down → Up → Down',
+          'Before Reversal Price': sequence.beforeReversalPrice,
+          'Reversal Price': sequence.reversalPrice,
+          'After Reversal Price': sequence.afterReversalPrice,
+          'Before Reversal Time': new Date(sequence.beforeReversalTime).toLocaleString(),
+          'Reversal Time': new Date(sequence.reversalTime).toLocaleString(),
+          'After Reversal Time': new Date(sequence.afterReversalTime).toLocaleString()
+        };
+      });
+
+      // Create workbook
+      const wb = XLSX.utils.book_new();
+      
+      // Add summary sheet
+      const summaryData = [
+        ['Summary', ''],
+        ['Total Potential Profit', `${totalPotentialProfit.toFixed(2)}`],
+        ['Total Potential Loss', `${totalPotentialLoss.toFixed(2)}`],
+        ['Net Potential', `${(totalPotentialProfit - totalPotentialLoss).toFixed(2)}`],
+        ['Profit Sequences Count', sequences.length],
+        ['Loss Sequences Count', lossSequences.length],
+        ['Export Date', new Date().toLocaleString()]
+      ];
+      const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+      
+      // Add profit data sheet
+      if (profitData.length > 0) {
+        const profitWs = XLSX.utils.json_to_sheet(profitData);
+        XLSX.utils.book_append_sheet(wb, profitWs, 'Potential Profit');
+      }
+      
+      // Add loss data sheet
+      if (lossData.length > 0) {
+        const lossWs = XLSX.utils.json_to_sheet(lossData);
+        XLSX.utils.book_append_sheet(wb, lossWs, 'Potential Losses');
+      }
+      
+      // Generate Excel file
+      const wbout = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+      const filename = `potential-profit-loss-${new Date().toISOString().split('T')[0]}.xlsx`;
+      
+      if (Platform.OS === 'web') {
+        // For web, create download link
+        const blob = new Blob([XLSX.write(wb, { type: 'array', bookType: 'xlsx' })], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        // For mobile, save and share file
+        const fileUri = FileSystem.documentDirectory + filename;
+        await FileSystem.writeAsStringAsync(fileUri, wbout, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            dialogTitle: 'Export Potential Profit/Loss Data'
+          });
+        } else {
+          Alert.alert('Success', `File saved to: ${fileUri}`);
+        }
+      }
+      
+      Alert.alert('Success', 'Data exported successfully!');
+    } catch (error) {
+      console.error('Export error:', error);
+      Alert.alert('Error', 'Failed to export data. Please try again.');
     }
   };
 
@@ -293,10 +404,26 @@ const PotentialProfit: React.FC<PotentialProfitProps> = ({
           </Text>
         </View>
         
-        <View style={styles.countContainer}>
-          <Text style={styles.countText}>
-            {viewMode === 'profit' ? sequences.length : lossSequences.length} sequences
-          </Text>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.downloadButton}
+            onPress={handleDownload}
+            disabled={sequences.length === 0 && lossSequences.length === 0}
+          >
+            <Download size={16} color={sequences.length === 0 && lossSequences.length === 0 ? Colors.light.subtext : '#FFFFFF'} />
+            <Text style={[
+              styles.downloadButtonText,
+              (sequences.length === 0 && lossSequences.length === 0) && styles.downloadButtonTextDisabled
+            ]}>
+              Export
+            </Text>
+          </TouchableOpacity>
+          
+          <View style={styles.countContainer}>
+            <Text style={styles.countText}>
+              {viewMode === 'profit' ? sequences.length : lossSequences.length} sequences
+            </Text>
+          </View>
         </View>
       </View>
       
@@ -725,6 +852,28 @@ const styles = StyleSheet.create({
   },
   activeViewModeButtonText: {
     color: '#FFFFFF',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  downloadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.light.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 6,
+  },
+  downloadButtonText: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  downloadButtonTextDisabled: {
+    color: Colors.light.subtext,
   },
 });
 

@@ -22,7 +22,12 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "app.rork.bot-trader-version-5-9r27kj1t-01ki0wd8-iy756nkd-88taiv00-p5f9mmvr"
+      "package": "app.rork.bot-trader-version-5-9r27kj1t-01ki0wd8-iy756nkd-88taiv00-p5f9mmvr",
+      "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "INTERNET"
+      ]
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
